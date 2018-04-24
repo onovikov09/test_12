@@ -6,7 +6,7 @@
 ?>
 
 <style>
-    button {
+    .table_control button, .datetime_wrap {
         margin: 15px;
     }
     #layout {
@@ -15,6 +15,9 @@
     }
     #sum {
         display: none;
+    }
+    .datetime_wrap span {
+        margin-right: 20px;
     }
 </style>
 

@@ -76,7 +76,7 @@ class SiteController extends Controller
                 ->limit($count)->orderBy(null)->asArray()->all();
         } else {
 
-            $data = WalletLog::find()->where([">=", "dt", $dt_start ? $dt_start : 0])->where(["wallet_to" => $wallet_id])
+            $data = WalletLog::find()->where([">=", "dt", $dt_start ? $dt_start : 0])->andWhere(["wallet_to" => $wallet_id])
                 ->andWhere(["<=", "dt", ($dt_end ? $dt_end : new \yii\db\Expression("NOW()"))])
                 ->select(['wallet_to', 'wallet_from', 'currency_key', 'currency_sum', 'usd_sum', 'dt', 'description'])
                 ->limit($count)->orderBy(null)->asArray()->all();
@@ -87,7 +87,7 @@ class SiteController extends Controller
         }
 
         $this->_download_send_headers("export.csv");
-        echo $this->_array2csv($data, $titles[$table]);
+        echo $this->_array2csv($data, $titles[$table]); exit;
     }
 
     /**
@@ -125,4 +125,5 @@ class SiteController extends Controller
         fclose($df);
         return ob_get_clean();
     }
+
 }

@@ -14,7 +14,7 @@ use yii\web\Controller;
  * @SWG\Swagger(
  *     basePath="/api",
  *     schemes={"http"},
- *     host="exn.local",
+ *     host="alltest.rnd1.ru",
  *     produces={"application/json"},
  *     consumes={"application/x-www-form-urlencoded"},
  *     @SWG\Info(
@@ -133,11 +133,8 @@ class ApiController extends Controller
             ->offset($offset)->limit($limit)->orderBy(null);
 
         if ($wallet_id) {
-            $walletLog->where(["wallet_to" => $wallet_id]);
+            $walletLog->andWhere(["wallet_to" => $wallet_id]);
         }
-
-        /*var_dump($walletLog->prepare(Yii::$app->db->queryBuilder)->createCommand()->rawSql);
-        exit();*/
 
         if ($is_get_sum) {
             return $this->asJson([
