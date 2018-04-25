@@ -47,6 +47,7 @@ const Handlers = {
             function(reply)
             {
                 reply.records.forEach(function(item) {
+<<<<<<< HEAD
                     item.currency_sum += " " + item.currency_key;
                     item.usd_sum += " usd";
                     item.recid = item.id;
@@ -56,6 +57,16 @@ const Handlers = {
 
                 w2ui.grid_wallet_log.records = [];
                 w2ui.grid_wallet_log.add(Handlers.storage.wallet_log.records);
+=======
+                    item["currency_sum"] += " " + item["currency_key"];
+                    item["usd_sum"] += " usd";
+                    item["recid"] = item["id"];
+                    Handlers.storage['wallet_log'].push(item);
+                });
+
+                w2ui.grid_wallet_log.records = [];
+                w2ui.grid_wallet_log.add(Handlers.storage['wallet_log']);
+>>>>>>> 0cbab54fd7fabe0dd4dde4a93b29a464e10b0650
 
                 Handlers.loadSumLogs();
             }
@@ -84,6 +95,10 @@ const Handlers = {
     },
     loadWallets: function(data)
     {
+<<<<<<< HEAD
+=======
+        Handlers.currencyKeyByWalletId = {};
+>>>>>>> 0cbab54fd7fabe0dd4dde4a93b29a464e10b0650
         data.records.forEach(function(item) {
             item["amount_currency"] = item.amount + " " + item.currency_key;
             item["recid"] = item["id"];
@@ -119,7 +134,11 @@ const Handlers = {
             Handlers.paramsByNameTable['grid_wallet_log'].dt_start = '';
             Handlers.paramsByNameTable['grid_wallet_log'].dt_end = '';
             Handlers.paramsByNameTable['grid_wallet_log'].offset = 0;
+<<<<<<< HEAD
             Handlers.storage.wallet_log = {records:[],ids:[]};
+=======
+            Handlers.storage['wallet_log'] = [];
+>>>>>>> 0cbab54fd7fabe0dd4dde4a93b29a464e10b0650
             $('input[type=dt_start]').val('');
             $('input[type=dt_end]').val('');
             Handlers.loadLogs();
@@ -129,7 +148,11 @@ const Handlers = {
             Handlers.paramsByNameTable['grid_wallet_log'].dt_start = $('input[type=dt_start]').val();
             Handlers.paramsByNameTable['grid_wallet_log'].dt_end = $('input[type=dt_end]').val();
             Handlers.paramsByNameTable['grid_wallet_log'].offset = 0;
+<<<<<<< HEAD
             Handlers.storage.wallet_log = {records:[],ids:[]};
+=======
+            Handlers.storage['wallet_log'] = [];
+>>>>>>> 0cbab54fd7fabe0dd4dde4a93b29a464e10b0650
             Handlers.loadLogs();
         });
     }

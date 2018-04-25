@@ -88,27 +88,27 @@ class ApiController extends Controller
      * 			in="path",
      * 			type="integer",
      * 			description="Offset",
-     *          default= 0
+     * 			default= 0
      * 		),
      *     @SWG\Parameter(
      * 			name="limit",
      * 			in="path",
      * 			type="integer",
      * 			description="Limit",
-     *          default= 5
+     * 			default= 5
      * 		),
      *     @SWG\Parameter(
      * 			name="dt_start",
      * 			in="path",
      * 			type="string",
-     *          default="",
+     * 			default="",
      * 			description="Date start period",
      * 		),
      *     @SWG\Parameter(
      * 			name="dt_end",
      * 			in="path",
      * 			type="string",
-     *          default="",
+     * 			default="",
      * 			description="Date end period",
      * 		),
      *     @SWG\Response(
