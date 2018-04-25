@@ -14,7 +14,7 @@ use yii\web\Controller;
  * @SWG\Swagger(
  *     basePath="/api",
  *     schemes={"http"},
- *     host="exn.local",
+ *     host="alltest.rnd1.ru",
  *     produces={"application/json"},
  *     consumes={"application/x-www-form-urlencoded"},
  *     @SWG\Info(
@@ -68,7 +68,7 @@ class ApiController extends Controller
      *   )
      * )
      */
-    public function actionWallets_get($offset = 0, $limit = 10)
+    public function actionWallets_get($offset = 0, $limit = 5)
     {
         return $this->asJson(Wallet::find()->offset($offset)->limit($limit)->orderBy(null)->all());
     }
@@ -133,7 +133,7 @@ class ApiController extends Controller
             ->andFilterWhere(["wallet_to" => $wallet_id]);
 
         //несмотря на то, что индекс создан, оптимизатор на маленьком объеме данных использует full scan
-        //чтобы принудительно заставить его использовать индекс нужно раскоментировать строку нижу, но это плохая практика
+        //чтобы принудительно заставить его использовать индекс нужно раскомментировать строку нижу, но это плохая практика
         //->from(new \yii\db\Expression('{{%wallet_log}} FORCE INDEX (dt_wallet_to)'))
 
         return $this->asJson($walletLog->limit($limit)->offset($offset)->asArray()->all());
