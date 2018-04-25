@@ -17,19 +17,13 @@
         "application/json"
     ],
     "paths": {
-        "/wallets?number={number}&offset={offset}&limit={limit}": {
+        "/wallets?offset={offset}&limit={limit}": {
             "get": {
                 "tags": [
                     "Wallet"
                 ],
                 "summary": "Get a list of wallets with a limit and offset.",
                 "parameters": [
-                    {
-                        "name": "number",
-                        "in": "path",
-                        "description": "The number of the wallet",
-                        "type": "string"
-                    },
                     {
                         "name": "offset",
                         "in": "path",
@@ -70,13 +64,15 @@
                         "name": "offset",
                         "in": "path",
                         "description": "Offset",
-                        "type": "integer"
+                        "type": "integer",
+                        "default": 0
                     },
                     {
                         "name": "limit",
                         "in": "path",
                         "description": "Limit",
-                        "type": "integer"
+                        "type": "integer",
+                        "default": 5
                     },
                     {
                         "name": "dt_start",

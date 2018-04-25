@@ -43,15 +43,9 @@ class ApiController extends Controller
     public $enableCsrfValidation = false;
 
     /**
-     * @SWG\Get(path="/wallets?number={number}&offset={offset}&limit={limit}",
+     * @SWG\Get(path="/wallets?offset={offset}&limit={limit}",
      *     tags={"Wallet"},
      *     summary="Get a list of wallets with a limit and offset.",
-     *     @SWG\Parameter(
-     * 			name="number",
-     * 			in="path",
-     * 			type="string",
-     * 			description="The number of the wallet"
-     * 		),
      *     @SWG\Parameter(
      * 			name="offset",
      * 			in="path",
@@ -93,13 +87,15 @@ class ApiController extends Controller
      * 			name="offset",
      * 			in="path",
      * 			type="integer",
-     * 			description="Offset"
+     * 			description="Offset",
+     *          default= 0
      * 		),
      *     @SWG\Parameter(
      * 			name="limit",
      * 			in="path",
      * 			type="integer",
-     * 			description="Limit"
+     * 			description="Limit",
+     *          default= 5
      * 		),
      *     @SWG\Parameter(
      * 			name="dt_start",
@@ -125,28 +121,22 @@ class ApiController extends Controller
      *   )
      * )
      */
-    public function actionWallets_log_get($wallet_id = false, $dt_start = false, $dt_end = false, $offset = 0,
-                                          $limit = 10, $is_get_sum = false)
+    public function actionWallets_log_get($wallet_id = false, $dt_start = false, $dt_end = false, $offset = 0, $limit = 5)
     {
-        $walletLog = WalletLog::find()->where([">=", "dt", $dt_start ? $dt_start : 0])
-            ->andWhere(["<=", "dt", ($dt_end ? $dt_end : new \yii\db\Expression("NOW()"))])
-            ->offset($offset)->limit($limit)->orderBy(null);
+        $walletLog = WalletLog::find()->leftJoin('wallet', 'wallet.id = wallet_log.wallet_to')
+            ->select([
+                'currency_sum', 'usd_sum', 'dt', 'description', 'wallet_to', 'wallet_log.currency_key', 'wallet_log.id',
+                'wallet.full_name'
+            ])
+            ->andFilterWhere([">=", "dt", $dt_start])
+            ->andFilterWhere(["<=", "dt", ($dt_end ? $dt_end : new \yii\db\Expression("NOW()"))])
+            ->andFilterWhere(["wallet_to" => $wallet_id]);
 
-        if ($wallet_id) {
-            $walletLog->where(["wallet_to" => $wallet_id]);
-        }
+        //несмотря на то, что индекс создан, оптимизатор на маленьком объеме данных использует full scan
+        //чтобы принудительно заставить его использовать индекс нужно раскоментировать строку нижу, но это плохая практика
+        //->from(new \yii\db\Expression('{{%wallet_log}} FORCE INDEX (dt_wallet_to)'))
 
-        /*var_dump($walletLog->prepare(Yii::$app->db->queryBuilder)->createCommand()->rawSql);
-        exit();*/
-
-        if ($is_get_sum) {
-            return $this->asJson([
-                round($walletLog->sum("currency_sum"), 2),
-                round($walletLog->sum("usd_sum"), 2)
-            ]);
-        } else {
-            return $this->asJson($walletLog->all());
-        }
+        return $this->asJson($walletLog->limit($limit)->offset($offset)->asArray()->all());
     }
 
     /**
@@ -430,6 +420,23 @@ class ApiController extends Controller
 
         Yii::$app->response->statusCode = 201;
         return $this->asJson($city);
+    }
+
+    /**
+     * Возвращает сумму записей
+     *
+     * @param array $ids
+     * @return \yii\web\Response
+     */
+    public function actionWallets_log_sum_get()
+    {
+        $ids = Yii::$app->request->get('ids', []);
+        $walletLog = WalletLog::find()->where(["in", "id", $ids])->orderBy(null);
+
+        return $this->asJson([
+            number_format(round($walletLog->sum("currency_sum"), 2), 2, '.', ' '),
+            number_format(round($walletLog->sum("usd_sum"), 2), 2, '.', ' ')
+        ]);
     }
 
     /**

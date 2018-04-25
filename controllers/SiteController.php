@@ -74,11 +74,14 @@ class SiteController extends Controller
         if ('grid_wallet' == $table) {
             $data = Wallet::find()->select(['id', 'number', 'full_name', 'amount', 'currency_key'])
                 ->limit($count)->orderBy(null)->asArray()->all();
+
         } else {
 
-            $data = WalletLog::find()->where([">=", "dt", $dt_start ? $dt_start : 0])->where(["wallet_to" => $wallet_id])
-                ->andWhere(["<=", "dt", ($dt_end ? $dt_end : new \yii\db\Expression("NOW()"))])
+            $data = WalletLog::find()
                 ->select(['wallet_to', 'wallet_from', 'currency_key', 'currency_sum', 'usd_sum', 'dt', 'description'])
+                ->andFilterWhere(["wallet_to" => $wallet_id])
+                ->andFilterWhere([">=", "dt", $dt_start])
+                ->andFilterWhere(["<=", "dt", ($dt_end ? $dt_end : new \yii\db\Expression("NOW()"))])
                 ->limit($count)->orderBy(null)->asArray()->all();
         }
 
@@ -88,6 +91,7 @@ class SiteController extends Controller
 
         $this->_download_send_headers("export.csv");
         echo $this->_array2csv($data, $titles[$table]);
+        exit;
     }
 
     /**

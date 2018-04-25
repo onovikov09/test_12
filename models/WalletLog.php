@@ -70,9 +70,9 @@ class WalletLog extends \yii\db\ActiveRecord
         if ("refill" == $operation) {
             $walletLog->wallet_to = $walletTo->id;
             $walletLog->description = "Replenishment for " . strval($currencySum) . " " . $currencyKey;
-            $walletLog->currency_sum = $walletTo->convertMoneyToWalletCurrency($currencySum, $currencyKey);
+            $walletLog->currency_sum = round($walletTo->convertMoneyToWalletCurrency($currencySum, $currencyKey), 2);
             $walletLog->currency_key = $walletTo->currency_key;
-            $walletLog->usd_sum = $walletTo->convertMoneyToBase($currencySum, $currencyKey);
+            $walletLog->usd_sum = round($walletTo->convertMoneyToBase($currencySum, $currencyKey), 2);
             if ($walletFrom) {
                 $walletLog->wallet_from = $walletFrom->id;
                 $walletLog->description = "Transfer " . strval($currencySum) . " " . $currencyKey . " from "
@@ -84,8 +84,8 @@ class WalletLog extends \yii\db\ActiveRecord
 
         $walletLog->wallet_to = $walletFrom->id;
         $walletLog->wallet_from = $walletTo->id;
-        $walletLog->currency_sum = -$walletFrom->convertMoneyToWalletCurrency($currencySum, $currencyKey);
-        $walletLog->usd_sum = -$walletFrom->convertMoneyToBase($currencySum, $currencyKey);
+        $walletLog->currency_sum = round(-$walletFrom->convertMoneyToWalletCurrency($currencySum, $currencyKey), 2);
+        $walletLog->usd_sum = round(-$walletFrom->convertMoneyToBase($currencySum, $currencyKey), 2);
         $walletLog->currency_key = $walletFrom->currency_key;
         $walletLog->description = "Transfer " . strval(-$currencySum) . " " . $currencyKey . " to "
             . $walletTo->full_name . " (" . $walletTo->number . ")";

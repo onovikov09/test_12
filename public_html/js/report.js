@@ -2,7 +2,10 @@ const Handlers = {
     baseLimit: 5,
     storage: {
         wallet: [],
-        wallet_log: []
+        wallet_log: {
+            records: [],
+            ids: []
+        }
     },
     paramsByNameTable: {
         grid_wallet: {
@@ -14,7 +17,6 @@ const Handlers = {
             limit: 5,
             dt_start: '',
             dt_end: '',
-            is_get_sum: 0,
             wallet_id: ''
         }
     },
@@ -41,19 +43,20 @@ const Handlers = {
     },
     loadLogs : function()
     {
-        Handlers.paramsByNameTable['grid_wallet_log'].is_get_sum = 0;
         w2ui.grid_wallet_log.load(Handlers.makeUrl('grid_wallet_log'),
             function(reply)
             {
-                reply.records.forEach(function(item, i, arr) {
-                    item["currency_sum"] += " " + item["currency_key"];
-                    item["usd_sum"] += " usd";
-                    item["recid"] = item["id"];
-                    Handlers.storage['wallet_log'].push(item);
+                reply.records.forEach(function(item) {
+                    item.currency_sum += " " + item.currency_key;
+                    item.usd_sum += " usd";
+                    item.recid = item.id;
+                    Handlers.storage.wallet_log.records.push(item);
+                    Handlers.storage.wallet_log.ids.push(parseInt(item.id, 10));
                 });
 
                 w2ui.grid_wallet_log.records = [];
-                w2ui.grid_wallet_log.add(Handlers.storage['wallet_log']);
+                w2ui.grid_wallet_log.add(Handlers.storage.wallet_log.records);
+
                 Handlers.loadSumLogs();
             }
         );
@@ -61,11 +64,10 @@ const Handlers = {
     loadSumLogs: function()
     {
         w2ui.logs_sum.clear();
-        Handlers.paramsByNameTable['grid_wallet_log'].is_get_sum = 1;
-        w2ui.logs_sum.load(Handlers.makeUrl('grid_wallet_log'),
+        w2ui.logs_sum.load(encodeURI('/api/wallets_log_sum?ids[]=' + Handlers.storage.wallet_log.ids.join('&ids[]=')),
             function(data)
             {
-                if (!data.records || !data.records[0] || !data.records[1]) {
+                if (!data.records || !data.records[0] || !data.records[1] || !Handlers.paramsByNameTable['grid_wallet_log'].wallet_id) {
                     return false;
                 }
 
@@ -75,31 +77,31 @@ const Handlers = {
                     currency_sum: data.records[0] + Handlers.currencyKeyByWalletId[Handlers.paramsByNameTable['grid_wallet_log'].wallet_id],
                     usd_sum: data.records[1] + " usd"
                 }]);
+
+                w2ui.grid_wallet_log.refresh();
             }
         );
     },
     loadWallets: function(data)
     {
-        Handlers.currencyKeyByWalletId = {};
-        data.records.forEach(function(item, i, arr) {
+        data.records.forEach(function(item) {
             item["amount_currency"] = item.amount + " " + item.currency_key;
             item["recid"] = item["id"];
             if (!Handlers.currencyKeyByWalletId[item["id"]]) {
                 Handlers.currencyKeyByWalletId[item["id"]] = " " + item["currency_key"];
             }
 
-            Handlers.storage['wallet'].push(item);
+            Handlers.storage.wallet.push(item);
         });
 
         w2ui.grid_wallet.records = [];
-        w2ui.grid_wallet.add(Handlers.storage['wallet']);
+        w2ui.grid_wallet.add(Handlers.storage.wallet);
     },
     loadMore: function(e)
     {
         const nameTable = $(e.currentTarget).data('load_table');
         if (w2ui[nameTable]) {
             Handlers.paramsByNameTable[nameTable].offset += Handlers.paramsByNameTable[nameTable].limit;
-            Handlers.paramsByNameTable['grid_wallet_log'].is_get_sum = 0;
             w2ui[nameTable].load(Handlers.basePathByKey[nameTable], Handlers[Handlers.handlersName[nameTable]]);
         }
     },
@@ -109,6 +111,27 @@ const Handlers = {
 
         $('[data-export_table="grid_wallet"]').prop("href", Handlers.makeUrlExport("grid_wallet"));
         $('[data-export_table="grid_wallet_log"]').prop("href", Handlers.makeUrlExport("grid_wallet_log"));
+
+        $('input[type=dt_start]').w2field('datetime', { format: 'yyyy-mm-dd|hh24:mm:ss', end: $('input[type=dt_end]') });
+        $('input[type=dt_end]').w2field('datetime', { format: 'yyyy-mm-dd|hh24:mm:ss', start: $('input[type=dt_start]')});
+
+        $('[data-reset]').on('click', function (e) {
+            Handlers.paramsByNameTable['grid_wallet_log'].dt_start = '';
+            Handlers.paramsByNameTable['grid_wallet_log'].dt_end = '';
+            Handlers.paramsByNameTable['grid_wallet_log'].offset = 0;
+            Handlers.storage.wallet_log = {records:[],ids:[]};
+            $('input[type=dt_start]').val('');
+            $('input[type=dt_end]').val('');
+            Handlers.loadLogs();
+        });
+
+        $('[data-filter]').on('click', function (e) {
+            Handlers.paramsByNameTable['grid_wallet_log'].dt_start = $('input[type=dt_start]').val();
+            Handlers.paramsByNameTable['grid_wallet_log'].dt_end = $('input[type=dt_end]').val();
+            Handlers.paramsByNameTable['grid_wallet_log'].offset = 0;
+            Handlers.storage.wallet_log = {records:[],ids:[]};
+            Handlers.loadLogs();
+        });
     }
 };
 
@@ -125,12 +148,14 @@ $('#layout').w2layout({
     panels: [
         { type: 'left', size: '30%', style: pstyle,
             content: '<div id="wallets" style="width: 100%; height: 350px;"></div>' +
-            '<div><button data-load_table="grid_wallet">Load more</button>' +
+            '<div class="table_control"><button data-load_table="grid_wallet">Load more</button>' +
             '<a href="" target="_blank" data-export_table="grid_wallet"><button>Export wallets to csv</button></a></div>'
         },
         { type: 'main', size: '70%', style: pstyle,
-            content: '<div id="logs" style="width: 100%; height: 350px;"></div>' +
-            '<div><button data-load_table="grid_wallet_log">Load more</button>' +
+            content: '<div id="logs" style="width: 100%; height: 295px;"></div>' +
+            '<div class="datetime_wrap"><span>Select datetime interval</span><input type="dt_start"> - <input type="dt_end">' +
+            '<button data-filter="grid_wallet_log">Filter</button><button data-reset="grid_wallet_log">Reset</button></div>' +
+            '<div class="table_control"><button data-load_table="grid_wallet_log">Load more</button>' +
             '<a href="" target="_blank" data-export_table="grid_wallet_log"><button>Export operation to csv</button></a></div>'
         }
     ]
@@ -159,7 +184,7 @@ $('#wallets').w2grid({
         if (event && event.recid) {
             Handlers.paramsByNameTable['grid_wallet_log'].wallet_id = event.recid;
             Handlers.paramsByNameTable['grid_wallet_log'].offset = 0;
-            Handlers.storage['wallet_log'] = [];
+            Handlers.storage.wallet_log = {records:[],ids:[]};
         }
         w2ui.grid_wallet_log.clear();
         Handlers.loadLogs();
@@ -180,17 +205,14 @@ $('#logs').w2grid({
     show: {
         footer    : true,
         toolbarReload: false,
-        toolbar: true
+        toolbar: false
     },
-    multiSearch: true,
-    searches: [
-        { field: 'dt', caption: 'Operation date', type: 'datetime', operator: 'between', datetimeFormat: 'yyyy-mm-dd|hh24:mm:ss',
-            operators:['between', { oper: 'less', text: 'before'}, { oper: 'more', text: 'after' }]}
-    ],
+    multiSearch: false,
     limit: Handlers.baseLimit,
     columns: [
+        { field: 'full_name', caption: 'Full name', size: '15%' },
         { field: 'dt', caption: 'Operation date', size: '15%' },
-        { field: 'description', caption: 'Description', size: '45%' },
+        { field: 'description', caption: 'Description', size: '30%' },
         { field: 'currency_sum', caption: 'Sum currency', size: '20%' },
         { field: 'usd_sum', caption: 'Sum in usd', size: '20%' }
     ],
@@ -198,39 +220,20 @@ $('#logs').w2grid({
     {
         $('[data-export_table="grid_wallet_log"]').prop("href", Handlers.makeUrlExport("grid_wallet_log"));
         data.url = Handlers.makeUrl('grid_wallet_log');
-    },
-    onSearch: function(data)
-    {
-        if (!data || !data.searchData || !data.searchData[0]) {
-            Handlers.paramsByNameTable['grid_wallet_log'].dt_start = '';
-            Handlers.paramsByNameTable['grid_wallet_log'].dt_end = '';
-            Handlers.loadLogs();
-            return false;
-        }
-
-        if ('dt' != data.searchData[0].field) {
-            return false;
-        }
-
-        const param = data.searchData[0];
-        if ("between" == param.operator && param.value[0] && param.value[1]) {
-            Handlers.paramsByNameTable['grid_wallet_log'].dt_start = param.value[0];
-            Handlers.paramsByNameTable['grid_wallet_log'].dt_end = param.value[1];
-        } else if ("less" == param.operator) {
-            Handlers.paramsByNameTable['grid_wallet_log'].dt_end = param.value;
-        } else if ("more" == param.operator) {
-            Handlers.paramsByNameTable['grid_wallet_log'].dt_start = param.value;
-        }
-
-        Handlers.loadLogs();
-        return false;
     }
 });
 
 $('#sum').w2grid({
     name: 'logs_sum',
     method: 'GET',
-    limit: 2
+    limit: 2,
+    show: {
+        footer    : true,
+        toolbar    : false,
+        toolbarReload: false
+    },
+    autoLoad: false,
+    multiSearch: false
 });
 
 Handlers.initHandler();
